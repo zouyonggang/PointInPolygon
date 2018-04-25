@@ -1,0 +1,12 @@
+说明：
+	a.本程序是基于重启动文件的jaumin数值比对工具
+	b.本程序依赖jaumin1.8.3-1839以上
+	
+
+1.构建：
+	a.进入build目录，cmake -DJAUMIN=/path/to/jaumin -DCDIM=2/3 ..
+	b.make
+
+2.使用:
+	a. “./main2d /path/to/src/restart/dir /path/to/target/restart/dir tol” 例如:
+		./main2d Linadv/restart_linadv-2d Linadv/restart_linadv-2d 1.0e-15
