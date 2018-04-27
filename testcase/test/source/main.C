@@ -21,6 +21,7 @@ using namespace std;
 #include "GridTopology.h"
 #include "HierarchyTimeIntegrator.h"
 #include "InputManager.h"
+#include "IntervalTree.h"
 #include "JAUMINManager.h"
 #include "JAUMIN_config.h"
 #include "JaVisDataWriter.h"
@@ -219,15 +220,32 @@ int main(int argc, char* argv[]) {
           // tbox::Array<int> node_flag(4, 10);
           // hier::BoundingBox<NDIM> bbox = geometry->getBoundingBox(node_flag);
           hier::DoubleVector<NDIM> a(0, 0);
-          hier::DoubleVector<NDIM> b(10, 2.33333);
+          hier::DoubleVector<NDIM> b(5, 2);
           hier::BoundingBox<NDIM> bbox(a, b, 10);
           cout << "index" << bbox.getIndex() << endl;
           hier::DoubleVector<NDIM> lower = bbox.getLower();
           hier::DoubleVector<NDIM> upper = bbox.getUpper();
-          cout << "bbox coordiante lower:" << lower(0) << "," << lower(1);
-          cout << "bbox coordiante upper:" << upper(0) << "," << upper(1)
+          cout << "bbox coordiante lower:" << lower(0) << "," << lower(1)
+               << " ";
+          cout << "bbox coordiante upper:" << upper[0] << "," << upper[1]
                << endl;
-          //}
+
+          //区间树
+          double box1[4] = {0, 5, 0, 2};
+          double box2[4] = {7, 10, 0, 2};
+          double test_box_lo[4] = {7, 1};
+          double test_box_up[4] = {8, 2};
+
+          hier::IntervalTree<NDIM> interval_tree(2);
+          interval_tree.addElement(1, box1);
+          interval_tree.addElement(2, box2);
+          interval_tree.constructTree();
+
+          std::vector<int> result;
+          interval_tree.getElementsListFromRange(test_box_lo, test_box_up,
+                                                 result);
+          cout << "result size:" << result.size() << endl;
+          for (int i = 0; i < result.size(); i++) cout << result[i] << " ";
 
         }  // end patch
       }    // end level

@@ -7,8 +7,8 @@
 // 描述  :  线性对流问题的网格层时间积分算法的实现.
 //
 
-#include "LinAdvLevelIntegrator.h"
 #include "GridGeometry.h"
+#include "LinAdvLevelIntegrator.h"
 #include <Utilities.h>
 
 /*************************************************************************

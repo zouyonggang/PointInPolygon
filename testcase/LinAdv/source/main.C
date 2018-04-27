@@ -8,8 +8,10 @@
 //
 
 #include <string>
+#include <vector>
 using namespace std;
 
+#include "ArrayData.h"
 #include "CompareData.h"
 #include "EntityUtilities.h"
 #include "GridGeometry.h"
@@ -26,6 +28,7 @@ using namespace std;
 #include "VariableDatabase.h"
 using namespace JAUMIN;
 
+#include "GridIntersect.h"
 #include "LinAdv.h"
 #include "LinAdvLevelIntegrator.h"
 
@@ -34,7 +37,7 @@ using namespace JAUMIN;
 * @brief   在网格文件名前面追加input文件的路径
 ************************************************************************
 */
-static void prefixInputDirName(const string &input_filename,
+static void prefixInputDirName(const string& input_filename,
                                tbox::Pointer<tbox::Database> input_db) {
   string path_name = "";
   string::size_type slash_pos = input_filename.find_last_of('/');
@@ -52,6 +55,10 @@ static void prefixInputDirName(const string &input_filename,
         ->putString("file_name", path_name + mesh_file);
   }
 }
+
+struct PointDescriptor {
+  std::vector<double> data;
+};
 
 /*!
 *************************************************************************
@@ -75,7 +82,7 @@ static void prefixInputDirName(const string &input_filename,
 *
 ************************************************************************
 */
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   // 初始化MPI和JAUMIN环境.
   tbox::MPI::init(&argc, &argv);
   tbox::JAUMINManager::startup();
@@ -85,7 +92,7 @@ int main(int argc, char *argv[]) {
      *                               预  处  理 *
      *******************************************************************************/
     // 解析命令行参数:
-    string input_filename; // 输入文件名.
+    string input_filename;  // 输入文件名.
     if (argc != 2) {
       tbox::pout << "USAGE:  " << argv[0] << " <input filename> "
                  << "<restart dir> <restore number> [options]\n"
@@ -131,12 +138,12 @@ int main(int argc, char *argv[]) {
 
     //(4) 创建网格片时间积分算法类（应用级:
     //提供求解线性对流方程的数值计算子程序）.
-    LinAdv *linadv_advection_model =
+    LinAdv* linadv_advection_model =
         new LinAdv("LinAdv", input_db->getDatabase("LinAdv"));
 
     //(5) 创建网格层时间积分算法类（应用级:
     //提供基于网格层的线性对流方程求解流程）.
-    LinAdvLevelIntegrator *linadv_level_integrator = new LinAdvLevelIntegrator(
+    LinAdvLevelIntegrator* linadv_level_integrator = new LinAdvLevelIntegrator(
         "LinAdvLevelIntegrator", linadv_advection_model);
 
     //(6) 创建网格层时间积分算法类.
@@ -149,48 +156,193 @@ int main(int argc, char *argv[]) {
     // 初始化网格片层次结构和物理量.
     time_integrator->initializeHierarchy();
 
+    // /************************************************************************************
+    //  *                              输 出 数 据 *
+    //  ************************************************************************************/
+    // {
+    //   //获取网格层
+    //   int number_levels = patch_hierarchy->getNumberOfLevels();
+    //   cout << endl << "网格层总数：" << number_levels << endl;
+    //   for (int level_id = 0; level_id < number_levels; level_id++) {
+    //     cout << "当前网格层：" << level_id << endl;
+    //     tbox::Pointer<hier::PatchLevel<NDIM>> patch_level =
+    //         patch_hierarchy->getPatchLevel(level_id);
+
+    //     for (typename hier::PatchLevel<NDIM>::Iterator p(patch_level); p;
+    //     p++) {
+    //       tbox::pout << "\n\n++++++++++++++++++++++++++++++++++++++++++++"
+    //                  << endl;
+    //       tbox::Pointer<hier::Patch<NDIM>> patch =
+    //       patch_level->getPatch(p()); cout << "patch index:" <<
+    //       patch->getIndex() << endl; int cell_number =
+    //       patch->getNumberOfEntities(
+    //           hier::EntityUtilities::EntityType::CELL, 2);
+    //       cout << "Patch cell entity:" << cell_number << endl;
+    //       int node_number = patch->getNumberOfNodes(2);
+    //       cout << "Patch node entity:" << node_number << endl << endl;
+
+    //       //获取geometry相关信息
+    //       tbox::Pointer<hier::PatchGeometry<NDIM>> geometry =
+    //           patch->getPatchGeometry();
+    //       cout << "the number of geometry entity set:"
+    //            << geometry->getNumberOfEntitySet() << endl;
+    //       tbox::Pointer<pdat::CellData<NDIM, double>> cell_coordinates =
+    //           geometry->getCellCoordinates();
+    //       cout << "cell coordinates depth：" << cell_coordinates->getDepth()
+    //            << endl;
+    //       cout << "cell coordinates groups：" << cell_coordinates->getGroup()
+    //            << endl;
+    //       double *cell_coordinate = cell_coordinates->getPointer();
+    //       cout << "cell coordinates：";
+    //       for (int i = 0; i < cell_number * 2; i++) {
+    //         cout << cell_coordinate[i] << " ";
+    //       }
+    //       tbox::Pointer<pdat::NodeData<NDIM, double>> node_coordinates =
+    //           geometry->getNodeCoordinates();
+    //       cout << "node coordinates depth：" << node_coordinates->getDepth()
+    //            << endl;
+    //       cout << "node coordinates groups：" << node_coordinates->getGroup()
+    //            << endl;
+    //       const double *coordinates = node_coordinates->getPointer(0);
+    //       cout << "node coordinates：";
+    //       for (int i = 0; i < node_number * 2; i++) {
+    //         cout << coordinates[i] << " ";
+    //       }
+    //       cout << endl << endl;
+
+    //       //获取topology相关信息
+    //       tbox::Pointer<hier::PatchTopology<NDIM>> topology =
+    //           patch->getPatchTopology();
+    //       tbox::Array<int> cell_adj_nodes_extent;
+    //       tbox::Array<int> cell_adj_nodes_indices;
+    //       topology->getCellAdjacencyNodes(cell_adj_nodes_extent,
+    //                                       cell_adj_nodes_indices);
+    //       cout << "cell_adj_nodes_extent:";
+    //       for (int i = 0; i < cell_adj_nodes_extent.size(); i++)
+    //         cout << cell_adj_nodes_extent[i] << " ";
+    //       cout << endl << "cell_adj_nodes_indices:";
+    //       for (int i = 0; i < cell_adj_nodes_indices.size(); i++)
+    //         cout << cell_adj_nodes_indices[i] << " ";
+    //       cout << endl;
+
+    //     //获取bounding box
+    // cout << "bounding box:";
+    // hier::BoundingBox<NDIM> bbox = geometry->getBoundingBox(5);
+    // cout << "index" << bbox.getIndex() << endl;
+    // hier::DoubleVector<NDIM> lower = bbox.getLower();
+    // hier::DoubleVector<NDIM> upper = bbox.getUpper();
+    // cout << "bbox coordiante lower:" << lower(0) << "," << lower(1)
+    //      << endl;
+    // cout << "bbox coordiante upper:" << upper(0) << "," << upper(1)
+    //      << endl;
+    //     }
+    //   }
+    // }
+
     /************************************************************************************
-     *                              输 出 数 据 *
+     *                              测 试 数 据 *
      ************************************************************************************/
-    //获取网格层
-    int number_levels = patch_hierarchy->getNumberOfLevels();
-    cout << "网格层总数：" << number_levels << endl;
-    for (int level_id = 0; level_id < number_levels; level_id++) {
-      cout << "当前网格层：" << level_id << endl;
-      tbox::Pointer<hier::PatchLevel<NDIM>> patch_level =
-          patch_hierarchy->getPatchLevel(level_id);
+    {
+      //获取网格层
+      int number_levels = patch_hierarchy->getNumberOfLevels();
+      cout << endl << "网格层总数：" << number_levels << endl;
+      for (int level_id = 0; level_id < number_levels; level_id++) {
+        cout << "当前网格层：" << level_id << endl;
+        tbox::Pointer<hier::PatchLevel<NDIM>> patch_level =
+            patch_hierarchy->getPatchLevel(level_id);
 
-      for (typename hier::PatchLevel<NDIM>::Iterator p(patch_level); p; p++) {
-        tbox::pout << "\n\n++++++++++++++++++++++++++++++++++++++++++++"
-                   << endl;
-        tbox::Pointer<hier::Patch<NDIM>> patch = patch_level->getPatch(p());
-        cout << "patch index:" << patch->getIndex() << endl;
-        cout << "Patch cell entity:"
-             << patch->getNumberOfEntities(
-                    hier::EntityUtilities::EntityType::CELL)
-             << endl;
+        for (typename hier::PatchLevel<NDIM>::Iterator p(patch_level); p; p++) {
+          //存储网格内部点
+          std::vector<PointDescriptor> inside_points;
+          //存储边界点
+          std::vector<PointDescriptor> boundary_points;
+          //存储网格外部点
+          std::vector<PointDescriptor> outside_points;
+          tbox::pout << "\n\n++++++++++++++++++++++++++++++++++++++++++++"
+                     << endl;
+          tbox::Pointer<hier::Patch<NDIM>> patch = patch_level->getPatch(p());
+          cout << "patch index:" << patch->getIndex() << endl;
+          int cell_number = patch->getNumberOfEntities(
+              hier::EntityUtilities::EntityType::CELL, 0);
+          cout << "Patch cell entity:" << cell_number << endl;
+          int node_number = patch->getNumberOfEntities(
+              hier::EntityUtilities::EntityType::NODE, 0);
+          tbox::Pointer<hier::PatchGeometry<NDIM>> geometry =
+              patch->getPatchGeometry();
+          tbox::Pointer<pdat::CellData<NDIM, double>> cell_coordinates =
+              geometry->getCellCoordinates();
+          double* cell_coordinate = cell_coordinates->getPointer();
+          tbox::Pointer<pdat::NodeData<NDIM, double>> node_coordinates =
+              geometry->getNodeCoordinates();
+          const double* node_coordinate = node_coordinates->getPointer(0);
 
-        //获取geometry相关信息
-        tbox::Pointer<hier::PatchGeometry<NDIM>> geometry =
-            patch->getPatchGeometry();
-        cout << "the number of geometry entity set:"
-             << geometry->getNumberOfEntitySet() << endl;
-        tbox::Pointer<pdat::NodeData<NDIM, double>> node_coordinates =
-            geometry->getNodeCoordinates();
-        cout << "node coordinates depth：" << node_coordinates->getDepth()
-             << endl;
-        cout << "node coordinates groups：" << node_coordinates->getGroup()
-             << endl;
-        const double *coordinates = node_coordinates->getPointer(0);
-        cout << "node coordinates：";
-        for (int i = 0; i < 100; i++)
-          cout << coordinates[i] << " ";
+          //将网格中心点赋值给inside-points
+          for (int i = 0; i < cell_number; i++) {
+            PointDescriptor point;
+            for (int j = 0; j < NDIM; j++)
+              point.data.push_back(cell_coordinate[j + i * NDIM]);
+            inside_points.push_back(point);
+          }
+          //将x轴最下方的顶点赋值给boundary-points
+          PointDescriptor x_lower_point = inside_points[0];
+          for (int i = 0; i < node_number; i++)
+            if (node_coordinate[i * NDIM] < x_lower_point.data[0])
+              for (int j = 0; j < NDIM; j++)
+                x_lower_point.data[j] = node_coordinate[i * NDIM + j];
+          boundary_points.push_back(x_lower_point);
+          //将内部影像区顶点赋值给outside_points
+          int node_number_with_ghost = patch->getNumberOfNodes(2);
+          for (int i = node_number; i < node_number_with_ghost; i++) {
+            PointDescriptor point;
+            for (int j = 0; j < NDIM; j++)
+              point.data.push_back(node_coordinate[i * NDIM + j]);
+            outside_points.push_back(point);
+          }
 
-        //获取topology相关信息
-        tbox::Pointer<hier::PatchTopology<NDIM>> topology =
-            patch->getPatchTopology();
-      }
-    }
+          //输出inside_points,boundary_points,outside_points
+          cout << "inside_point:";
+          double inside_point[inside_points.size() * NDIM];
+          int iter = 0;
+          for (int i = 0; i < inside_points.size(); i++) {
+            for (int j = 0; j < NDIM; j++) {
+              inside_point[iter++] = inside_points[i].data[j];
+              cout << inside_points[i].data[j] << " ";
+            }
+            cout << ";";
+          }
+
+          cout << endl << "boundary_points:";
+          double boundary_point[boundary_points.size() * NDIM];
+          iter = 0;
+          for (int i = 0; i < boundary_points.size(); i++) {
+            for (int j = 0; j < NDIM; j++) {
+              boundary_point[iter++] = boundary_points[i].data[j];
+              cout << boundary_points[i].data[j] << " ";
+            }
+            cout << ";";
+          }
+          cout << endl << "outside_points:";
+          double outside_point[outside_points.size() * NDIM];
+          iter = 0;
+          for (int i = 0; i < outside_points.size(); i++) {
+            for (int j = 0; j < NDIM; j++) {
+              outside_point[iter++] = outside_points[i].data[j];
+              cout << outside_points[i].data[j] << " ";
+            }
+            cout << ";";
+          }
+          cout << endl;
+
+          //进行点与网格定位
+          tbox::Pointer<GridIntersect<NDIM>> intersect =
+              new GridIntersect<NDIM>(patch);
+          vector<int> ids =
+              intersect->pointInGrid(inside_point, inside_points.size());
+          cout << "相交网格编号为:" << ids[0];
+
+        }  // end patch
+      }    // end level
+    }      // end test
   }
 
   // 释放JAUMIN和MPI内部资源.

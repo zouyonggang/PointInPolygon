@@ -29,9 +29,9 @@ LinAdv {
 GridGeometry {
 
     MeshImportationParameter{
-       file_name = "rectng_50x10.k"
+       //file_name = "rectng_50x10.k"
        //file_name = "rectng_500x100.k"
-       //file_name = "rectng_6x2.k"
+       file_name = "rectng_6x2.k"
        refine_times = 0
     }
 }
