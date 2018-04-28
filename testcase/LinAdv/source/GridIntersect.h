@@ -8,7 +8,6 @@
 #include "Patch.h"
 using namespace JAUMIN;
 
-template <int DIM>
 class GridIntersectImpl;
 
 /**
@@ -18,7 +17,7 @@ class GridIntersectImpl;
  * 3.给定源数据网格和目标单元网格，输出两个网格相交的源单元个数，以及源单元在网格片中的索引号
  *
  */
-template <int DIM>
+
 class GridIntersect : public boost::noncopyable {
 public:
   /**
@@ -26,7 +25,7 @@ public:
    *
    * @param dest_patch 用于点相交、射线相交、网格相交的目的网格
    */
-  GridIntersect(tbox::Pointer<hier::Patch<DIM>> dest_patch);
+  GridIntersect(tbox::Pointer<hier::Patch<3>> dest_patch);
   ~GridIntersect();
 
   /**
@@ -58,12 +57,12 @@ public:
    * @param number 相交单元个数
    * @param ids 源网格中相交网格单元索引
    */
-  void gridIntersectGrid(tbox::Pointer<hier::Patch<DIM>> src_patch, int number,
+  void gridIntersectGrid(tbox::Pointer<hier::Patch<3>> src_patch, int number,
                          std::vector<int> ids);
 
 private:
-  boost::shared_ptr<GridIntersectImpl<DIM>> impl_;
+  boost::shared_ptr<GridIntersectImpl> impl_;
 };
 
-#include "GridIntersect.cpp"
+// #include "GridIntersect.cpp" 模板类加上
 #endif  // GRID_INTERSECT_H

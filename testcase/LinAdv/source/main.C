@@ -334,8 +334,7 @@ int main(int argc, char* argv[]) {
           cout << endl;
 
           //进行点与网格定位
-          tbox::Pointer<GridIntersect<NDIM>> intersect =
-              new GridIntersect<NDIM>(patch);
+          tbox::Pointer<GridIntersect> intersect = new GridIntersect(patch);
           vector<int> ids =
               intersect->pointInGrid(inside_point, inside_points.size());
           cout << "相交网格编号为:" << ids[0];
