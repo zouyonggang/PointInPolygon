@@ -125,17 +125,17 @@ int main(int argc, char* argv[]) {
      *                     创建网格片层次结构和积分算法类对象 *
      *******************************************************************************/
     //(1) 创建非结构网格几何.
-    tbox::Pointer<hier::GridGeometry<NDIM>> grid_geometry =
+    tbox::Pointer<hier::GridGeometry<NDIM> > grid_geometry =
         new hier::GridGeometry<NDIM>("GridGeometry",
                                      input_db->getDatabase("GridGeometry"));
 
     //(2) 创建非结构网格拓扑.
-    tbox::Pointer<hier::GridTopology<NDIM>> grid_topology =
+    tbox::Pointer<hier::GridTopology<NDIM> > grid_topology =
         new hier::GridTopology<NDIM>("GridTopology",
                                      input_db->getDatabase("GridTopology"));
 
     //(3) 创建网格片层次结构.
-    tbox::Pointer<hier::PatchHierarchy<NDIM>> patch_hierarchy =
+    tbox::Pointer<hier::PatchHierarchy<NDIM> > patch_hierarchy =
         new hier::PatchHierarchy<NDIM>("PatchHierarchy", grid_geometry,
                                        grid_topology, true);
 
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]) {
         "LinAdvLevelIntegrator", linadv_advection_model);
 
     //(6) 创建网格层时间积分算法类.
-    tbox::Pointer<algs::HierarchyTimeIntegrator<NDIM>> time_integrator =
+    tbox::Pointer<algs::HierarchyTimeIntegrator<NDIM> > time_integrator =
         new algs::HierarchyTimeIntegrator<NDIM>(
             "HierarchyTimeIntegrator",
             input_db->getDatabase("HierarchyTimeIntegrator"), patch_hierarchy,
@@ -168,26 +168,26 @@ int main(int argc, char* argv[]) {
       cout << endl << "网格层总数：" << number_levels << endl;
       for (int level_id = 0; level_id < number_levels; level_id++) {
         cout << "当前网格层：" << level_id << endl;
-        tbox::Pointer<hier::PatchLevel<NDIM>> patch_level =
+        tbox::Pointer<hier::PatchLevel<NDIM> > patch_level =
             patch_hierarchy->getPatchLevel(level_id);
 
         for (typename hier::PatchLevel<NDIM>::Iterator p(patch_level); p; p++) {
           tbox::pout << "\n\n++++++++++++++++++++++++++++++++++++++++++++"
                      << endl;
-          tbox::Pointer<hier::Patch<NDIM>> patch = patch_level->getPatch(p());
+          tbox::Pointer<hier::Patch<NDIM> > patch = patch_level->getPatch(p());
           cout << "patch index:" << patch->getIndex() << endl;
           int cell_number = patch->getNumberOfEntities(
-              hier::EntityUtilities::EntityType::CELL, 2);
+              hier::EntityUtilities::CELL, 0);
           cout << "Patch cell entity:" << cell_number << endl;
-          int node_number = patch->getNumberOfNodes(2);
+          int node_number = patch->getNumberOfNodes(0);
           cout << "Patch node entity:" << node_number << endl << endl;
 
           //获取geometry相关信息
-          tbox::Pointer<hier::PatchGeometry<NDIM>> geometry =
+          tbox::Pointer<hier::PatchGeometry<NDIM> > geometry =
               patch->getPatchGeometry();
           cout << "the number of geometry entity set:"
                << geometry->getNumberOfEntitySet() << endl;
-          tbox::Pointer<pdat::CellData<NDIM, double>> cell_coordinates =
+          tbox::Pointer<pdat::CellData<NDIM, double> > cell_coordinates =
               geometry->getCellCoordinates();
           cout << "cell coordinates depth：" << cell_coordinates->getDepth()
                << endl;
@@ -198,7 +198,7 @@ int main(int argc, char* argv[]) {
           for (int i = 0; i < cell_number * 2; i++) {
             cout << cell_coordinate[i] << " ";
           }
-          tbox::Pointer<pdat::NodeData<NDIM, double>> node_coordinates =
+          tbox::Pointer<pdat::NodeData<NDIM, double> > node_coordinates =
               geometry->getNodeCoordinates();
           cout << "node coordinates depth：" << node_coordinates->getDepth()
                << endl;
@@ -230,19 +230,34 @@ int main(int argc, char* argv[]) {
           cout << "bbox coordiante upper:" << upper[0] << "," << upper[1]
                << endl;
 
+          //获取topology相关信息
+          tbox::Pointer<hier::PatchTopology<NDIM> > topology =
+              patch->getPatchTopology();
+          tbox::Array<int> cell_adj_nodes_extent;
+          tbox::Array<int> cell_adj_nodes_indices;
+          topology->getCellAdjacencyNodes(cell_adj_nodes_extent,
+                                          cell_adj_nodes_indices);
+          cout << "cell_adj_nodes_extent:";
+          for (int i = 0; i < cell_adj_nodes_extent.size(); i++)
+            cout << cell_adj_nodes_extent[i] << " ";
+          cout << endl << "cell_adj_nodes_indices:";
+          for (int i = 0; i < cell_adj_nodes_indices.size(); i++)
+            cout << cell_adj_nodes_indices[i] << " ";
+          cout << endl;
+
           //区间树
           double box1[4] = {0, 5, 0, 2};
           double box2[4] = {7, 10, 0, 2};
-          double test_box_lo[4] = {7, 1};
-          double test_box_up[4] = {8, 2};
+          double test_box_lo[4] = {0, 0};
+          double test_box_up[4] = {7, 2};
 
           hier::IntervalTree<NDIM> interval_tree(2);
-          interval_tree.addElement(1, box1);
-          interval_tree.addElement(2, box2);
+          interval_tree.addElement(0, box1);
+          interval_tree.addElement(1, box2);
           interval_tree.constructTree();
 
           std::vector<int> result;
-          interval_tree.getElementsListFromRange(test_box_lo, test_box_up,
+          interval_tree.getElementsListFromRange(test_box_lo, test_box_lo,
                                                  result);
           cout << "result size:" << result.size() << endl;
           for (int i = 0; i < result.size(); i++) cout << result[i] << " ";

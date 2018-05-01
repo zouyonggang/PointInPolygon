@@ -122,17 +122,17 @@ int main(int argc, char* argv[]) {
      *                     创建网格片层次结构和积分算法类对象 *
      *******************************************************************************/
     //(1) 创建非结构网格几何.
-    tbox::Pointer<hier::GridGeometry<NDIM>> grid_geometry =
+    tbox::Pointer<hier::GridGeometry<NDIM> > grid_geometry =
         new hier::GridGeometry<NDIM>("GridGeometry",
                                      input_db->getDatabase("GridGeometry"));
 
     //(2) 创建非结构网格拓扑.
-    tbox::Pointer<hier::GridTopology<NDIM>> grid_topology =
+    tbox::Pointer<hier::GridTopology<NDIM> > grid_topology =
         new hier::GridTopology<NDIM>("GridTopology",
                                      input_db->getDatabase("GridTopology"));
 
     //(3) 创建网格片层次结构.
-    tbox::Pointer<hier::PatchHierarchy<NDIM>> patch_hierarchy =
+    tbox::Pointer<hier::PatchHierarchy<NDIM> > patch_hierarchy =
         new hier::PatchHierarchy<NDIM>("PatchHierarchy", grid_geometry,
                                        grid_topology, true);
 
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
         "LinAdvLevelIntegrator", linadv_advection_model);
 
     //(6) 创建网格层时间积分算法类.
-    tbox::Pointer<algs::HierarchyTimeIntegrator<NDIM>> time_integrator =
+    tbox::Pointer<algs::HierarchyTimeIntegrator<NDIM> > time_integrator =
         new algs::HierarchyTimeIntegrator<NDIM>(
             "HierarchyTimeIntegrator",
             input_db->getDatabase("HierarchyTimeIntegrator"), patch_hierarchy,
@@ -165,14 +165,14 @@ int main(int argc, char* argv[]) {
     //   cout << endl << "网格层总数：" << number_levels << endl;
     //   for (int level_id = 0; level_id < number_levels; level_id++) {
     //     cout << "当前网格层：" << level_id << endl;
-    //     tbox::Pointer<hier::PatchLevel<NDIM>> patch_level =
+    //     tbox::Pointer<hier::PatchLevel<NDIM> > patch_level =
     //         patch_hierarchy->getPatchLevel(level_id);
 
     //     for (typename hier::PatchLevel<NDIM>::Iterator p(patch_level); p;
     //     p++) {
     //       tbox::pout << "\n\n++++++++++++++++++++++++++++++++++++++++++++"
     //                  << endl;
-    //       tbox::Pointer<hier::Patch<NDIM>> patch =
+    //       tbox::Pointer<hier::Patch<NDIM> > patch =
     //       patch_level->getPatch(p()); cout << "patch index:" <<
     //       patch->getIndex() << endl; int cell_number =
     //       patch->getNumberOfEntities(
@@ -182,11 +182,11 @@ int main(int argc, char* argv[]) {
     //       cout << "Patch node entity:" << node_number << endl << endl;
 
     //       //获取geometry相关信息
-    //       tbox::Pointer<hier::PatchGeometry<NDIM>> geometry =
+    //       tbox::Pointer<hier::PatchGeometry<NDIM> > geometry =
     //           patch->getPatchGeometry();
     //       cout << "the number of geometry entity set:"
     //            << geometry->getNumberOfEntitySet() << endl;
-    //       tbox::Pointer<pdat::CellData<NDIM, double>> cell_coordinates =
+    //       tbox::Pointer<pdat::CellData<NDIM, double> > cell_coordinates =
     //           geometry->getCellCoordinates();
     //       cout << "cell coordinates depth：" << cell_coordinates->getDepth()
     //            << endl;
@@ -197,7 +197,7 @@ int main(int argc, char* argv[]) {
     //       for (int i = 0; i < cell_number * 2; i++) {
     //         cout << cell_coordinate[i] << " ";
     //       }
-    //       tbox::Pointer<pdat::NodeData<NDIM, double>> node_coordinates =
+    //       tbox::Pointer<pdat::NodeData<NDIM, double> > node_coordinates =
     //           geometry->getNodeCoordinates();
     //       cout << "node coordinates depth：" << node_coordinates->getDepth()
     //            << endl;
@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
     //       cout << endl << endl;
 
     //       //获取topology相关信息
-    //       tbox::Pointer<hier::PatchTopology<NDIM>> topology =
+    //       tbox::Pointer<hier::PatchTopology<NDIM> > topology =
     //           patch->getPatchTopology();
     //       tbox::Array<int> cell_adj_nodes_extent;
     //       tbox::Array<int> cell_adj_nodes_indices;
@@ -248,7 +248,7 @@ int main(int argc, char* argv[]) {
       cout << endl << "网格层总数：" << number_levels << endl;
       for (int level_id = 0; level_id < number_levels; level_id++) {
         cout << "当前网格层：" << level_id << endl;
-        tbox::Pointer<hier::PatchLevel<NDIM>> patch_level =
+        tbox::Pointer<hier::PatchLevel<NDIM> > patch_level =
             patch_hierarchy->getPatchLevel(level_id);
 
         for (typename hier::PatchLevel<NDIM>::Iterator p(patch_level); p; p++) {
@@ -260,19 +260,19 @@ int main(int argc, char* argv[]) {
           std::vector<PointDescriptor> outside_points;
           tbox::pout << "\n\n++++++++++++++++++++++++++++++++++++++++++++"
                      << endl;
-          tbox::Pointer<hier::Patch<NDIM>> patch = patch_level->getPatch(p());
+          tbox::Pointer<hier::Patch<NDIM> > patch = patch_level->getPatch(p());
           cout << "patch index:" << patch->getIndex() << endl;
           int cell_number = patch->getNumberOfEntities(
-              hier::EntityUtilities::EntityType::CELL, 0);
+              hier::EntityUtilities::CELL, 0);
           cout << "Patch cell entity:" << cell_number << endl;
           int node_number = patch->getNumberOfEntities(
-              hier::EntityUtilities::EntityType::NODE, 0);
-          tbox::Pointer<hier::PatchGeometry<NDIM>> geometry =
+              hier::EntityUtilities::NODE, 0);
+          tbox::Pointer<hier::PatchGeometry<NDIM> > geometry =
               patch->getPatchGeometry();
-          tbox::Pointer<pdat::CellData<NDIM, double>> cell_coordinates =
+          tbox::Pointer<pdat::CellData<NDIM, double> > cell_coordinates =
               geometry->getCellCoordinates();
           double* cell_coordinate = cell_coordinates->getPointer();
-          tbox::Pointer<pdat::NodeData<NDIM, double>> node_coordinates =
+          tbox::Pointer<pdat::NodeData<NDIM, double> > node_coordinates =
               geometry->getNodeCoordinates();
           const double* node_coordinate = node_coordinates->getPointer(0);
 
@@ -337,7 +337,9 @@ int main(int argc, char* argv[]) {
           tbox::Pointer<GridIntersect> intersect = new GridIntersect(patch);
           vector<int> ids =
               intersect->pointInGrid(inside_point, inside_points.size());
-          cout << "相交网格编号为:" << ids[0];
+          cout << "相交网格编号为:";
+          for (int i=0;i<ids.size();i++)
+             cout << ids[i] << " ";
 
         }  // end patch
       }    // end level

@@ -16,6 +16,6 @@ find_package(JAUMIN REQUIRED)
 include_directories(${JAUMIN_INCLUDE_DIRS})
 add_definitions(${JAUMIN_DEFINITIONS})
 
-file(GLOB_RECURSE src_files ./*.C ./*.cpp ./fortran/${JAUMIN_NDIM}d/*.f ./fortran/*.f)
+file(GLOB_RECURSE src_files ./*.cpp ./*.C ./fortran/${JAUMIN_NDIM}d/*.f ./fortran/*.f)
 add_executable(main${JAUMIN_NDIM}d ${src_files})
 target_link_libraries(main${JAUMIN_NDIM}d ${JAUMIN_LIBRARIES})

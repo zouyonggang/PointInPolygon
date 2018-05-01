@@ -25,7 +25,7 @@ public:
    *
    * @param dest_patch 用于点相交、射线相交、网格相交的目的网格
    */
-  GridIntersect(tbox::Pointer<hier::Patch<3>> dest_patch);
+  GridIntersect(tbox::Pointer<hier::Patch<3> > dest_patch);
   ~GridIntersect();
 
   /**
@@ -47,7 +47,7 @@ public:
    * @param intersection 输出参数，交点坐标
    */
   void rayIntersectGrid(const double* start_points, const double* direction,
-                        int n, std::vector<int> ids,
+                        int n, std::vector<int>& ids,
                         double* intersection_coordinates);
 
   /**
@@ -57,8 +57,8 @@ public:
    * @param number 相交单元个数
    * @param ids 源网格中相交网格单元索引
    */
-  void gridIntersectGrid(tbox::Pointer<hier::Patch<3>> src_patch, int number,
-                         std::vector<int> ids);
+  void gridIntersectGrid(tbox::Pointer<hier::Patch<3> > src_patch, int number,
+                         std::vector<int>& ids);
 
 private:
   boost::shared_ptr<GridIntersectImpl> impl_;

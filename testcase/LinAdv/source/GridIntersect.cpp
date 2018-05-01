@@ -61,22 +61,22 @@ public:
    *
    * @param dest_patch 输入的patch网格片
    */
-  GridIntersectImpl(tbox::Pointer<hier::Patch<3>> dest_patch) {
+  GridIntersectImpl(tbox::Pointer<hier::Patch<3> > dest_patch) {
     int node_number = dest_patch->getNumberOfEntities(
-        hier::EntityUtilities::EntityType::NODE, 0);
+        hier::EntityUtilities::NODE, 0);
     int edge_number = dest_patch->getNumberOfEntities(
-        hier::EntityUtilities::EntityType::EDGE, 0);
+        hier::EntityUtilities::EDGE, 0);
     int face_number = dest_patch->getNumberOfEntities(
-        hier::EntityUtilities::EntityType::FACE, 0);
+        hier::EntityUtilities::FACE, 0);
     int cell_number = dest_patch->getNumberOfEntities(
-        hier::EntityUtilities::EntityType::CELL, 0);
-    tbox::Pointer<hier::PatchTopology<3>> topology =
+        hier::EntityUtilities::CELL, 0);
+    tbox::Pointer<hier::PatchTopology<3> > topology =
         dest_patch->getPatchTopology();
 
     //获取节点,保存节点
-    tbox::Pointer<hier::PatchGeometry<3>> patch_geometry =
+    tbox::Pointer<hier::PatchGeometry<3> > patch_geometry =
         dest_patch->getPatchGeometry();
-    tbox::Pointer<pdat::NodeData<3, double>> node =
+    tbox::Pointer<pdat::NodeData<3, double> > node =
         patch_geometry->getNodeCoordinates();
     assert(node->getDepth() == 1);
     assert(node->getGroup() == 3);
@@ -153,7 +153,7 @@ public:
       cell.index = i;
       for (int j = cell_adj_nodes_extent[i]; j < cell_adj_nodes_extent[i + 1];
            j++)
-        cell.nodes.push_back(cell_adj_nodes_extent[j]);
+        cell.nodes.push_back(cell_adj_nodes_indices[j]);
       for (int j = cell_adj_edges_extent[i]; j < cell_adj_edges_extent[i + 1];
            j++)
         cell.edges.push_back(face_adj_edges_indices[j]);
@@ -233,7 +233,7 @@ public:
    */
   void lineSurfaceIntersect(const double* point, const double* direction,
                             const double* face, double* intersection,
-                            double& dist, int tag) {
+                            double& dist, int& tag) {
     assert(point != NULL && direction != NULL && face != NULL);
 
     const double epson = 1.0e-12;
@@ -259,8 +259,7 @@ public:
     //                                   y = ym + yd t
     //                                   z = zm + zd t
     if (abs(delta) <= epson)
-      //射线切向与平面平行
-      tag = -1;
+      tag = -1; //射线切向与平面平行
     else {
       //射线与平面不平行，计算交点对应的t值
       tmp = -1 * AA * point[0] - BB * point[1] - CC * point[2] - DD;
@@ -275,28 +274,40 @@ public:
         dist = t * sqrt(intersection[0] * intersection[0] +
                         intersection[1] * intersection[1] +
                         intersection[2] * intersection[2]);
-      } else
-        // t < 0，说明射线与平面的交点在射线的负方向，射线本上与平面五交点
-        tag = -2;
+      } else {
+        tag = -2; // t < 0，说明射线与平面的交点在射线的负方向，射线本上与平面无交点
+      }
     }
   }
 
   /**
-   * @brief 将同一个面三维点降为二维点
+   * @brief 将同一个面三维点降为二维点,去除法向量绝对值最大的分量维度
    *
    * @param points 输入三维点集合
    * @param n 点个数
    * @param result 返回二维点集合
    */
   void reduceDim(double* points, int n, double* result) {
-    int dim_index = 0;
-    for (int d = 0; d < 3; d++) {
-      int i = 0;
-      for (; i < n; i++)
-        if (points[i * 3 + d] != points[(i + 1) * 3 + d]) break;
-      assert(i == n);  // points not in a face
-      dim_index = d;
-    }
+    int dim_index = 0;  //存储即将要去掉维度
+
+    //x,y,z存储法向量的各维度
+    int x1=points[0];
+    int y1=points[1];
+    int z1=points[2];
+    int x2=points[3];
+    int y2=points[4];
+    int z2=points[5];
+    int x3=points[6];
+    int y3=points[7];
+    int z3=points[8];
+    int x = (y2-y1)*(z3-z1)-(z2-z1)*(y3-y1);
+    int y = (z2-z1)*(x3-x1)-(z3-z1)*(x2-x1);
+    int z = (x2-x1)*(y3-y1)-(x3-x1)*(y2-y1);
+    int max=-1;
+    if(abs(x) > max) {max=abs(x);dim_index=0;}
+    if(abs(y) > max) {max=abs(y);dim_index=1;}
+    if(abs(z) > max) {max=abs(z);dim_index=2;}
+
     for (int i = 0; i < n; i++) {
       if (dim_index == 0) {
         result[i * 2] = points[i * 3 + 1];
@@ -323,12 +334,12 @@ public:
    * @param tag 输出参数，标识符
    *              0：成功求出交点，并且交点在face面内部
    *             -1：射线与平面平行
-   *             -2：射线所在直线与平面的交点在射线的副方向
+   *             -2：射线所在直线与平面的交点在射线的负方向
    *             -3：射线与所在平面相交，但是交点在face外
    */
   void rayIntersectFace(const double* point, const double* direction,
                         const double* face, int n, double* intersection,
-                        double& dist, int tag) {
+                        double& dist, int& tag) {
     assert(n >= 3);
     //取前三个点组成的面与射线相交，获取交点与距离
     double sub_face[9];
@@ -336,7 +347,7 @@ public:
     lineSurfaceIntersect(point, direction, sub_face, intersection, dist, tag);
 
     if (tag == 0) {  //有交点
-      //将交点于组成面的点降为2维
+      //将交点与组成面的点降为2维
       double new_points[(n + 1) * 3];
       for (int i = 0; i < n * 3; i++) new_points[i] = face[i];
       new_points[n * 3] = intersection[0];
@@ -359,7 +370,7 @@ public:
    * @brief
    * 输入一个点，将该点与patch内所有网格单元包围盒相交，输出与相交的网格单元索引
    *
-   * @param points 输入参数，将要与网格单元相交的点坐标
+   * @param point 输入参数，将要与网格单元相交的点坐标
    *
    * @return std::vector<int> 输出参数，与输入点相交的网格单元索引集合
    */
@@ -371,13 +382,14 @@ public:
     for (std::map<int, CellDescriptor>::iterator it = patch_cells_.begin();
          it != patch_cells_.end(); it++) {
       CellDescriptor& cell = it->second;
-      double bbox[6] = {1.0e16, 1.0e16, 1.0e16, -1.0e16, -1.0e16, -1.0e16};
+      //区间树输入要求列主序
+      double bbox[6] = {1.0e16, -1.0e16, 1.0e16, -1.0e16, 1.0e16, -1.0e16};
       for (int i = 0; i < cell.nodes.size(); i++) {
         assert(cell.nodes[i] <= patch_nodes_.size());
         NodeDescriptor& node = patch_nodes_[cell.nodes[i]];
         for (int d = 0; d < 3; d++) {
-          bbox[d] = std::min(bbox[d], node.coord[d]);
-          bbox[d + 3] = std::max(bbox[d + 3], node.coord[d]);
+          bbox[d*2] = std::min(bbox[d*2], node.coord[d]);
+          bbox[d*2+1] = std::max(bbox[d*2 + 1], node.coord[d]);
         }
       }
       interval_tree.addElement(it->first, bbox);
@@ -416,7 +428,7 @@ public:
         //就是当点在单元边缘时,由于double误差关系，会使计算结果不准确，
         //所以取点上下左右前后附近六个点进行测试，如果这六个点都在网格内，
         //说明该点在网格内，如果有的在网格内，有的在网格外进行报错
-        bool result[6] = {false};
+        bool point_result[6] = {false};
         double around_points[18] = {
             point[0] + 1.0e-8, point[1],          point[2],
             point[0] - 1.0e-8, point[1],          point[2],
@@ -437,22 +449,33 @@ public:
             std::vector<int> face_nodes = face.nodes;
             double face_nodes_coord[face_nodes.size() * 3];
             double direction[3] = {1, 0, 0};
+            for (int nnode = 0; nnode < face_nodes.size(); nnode++) {
+              face_nodes_coord[nnode * 3] =
+                  patch_nodes_[face_nodes[nnode]].coord[0];
+              face_nodes_coord[nnode * 3 + 1] =
+                  patch_nodes_[face_nodes[nnode]].coord[1];
+              face_nodes_coord[nnode * 3 + 2] =
+                  patch_nodes_[face_nodes[nnode]].coord[2];
+            }
             double intersection[3];
             double dist;
-            int tag;
+            int tag=-4;
             rayIntersectFace(around_point, direction, face_nodes_coord,
                              face_nodes.size(), intersection, dist, tag);
             if (tag == 0) cross_number++;
           }  // end loop cell face
-          if (cross > 0 && (cross_number % 2 == 0)) reuslt[i] = true;
+          if (cross_number > 0 && (cross_number % 2 != 0)) point_result[p] = true;
         }
-
+        //收集结果
         for (int p = 0; p < 6; p++)
-          if (result[p] != result[p + 1]) {
-          }
+          if (point_result[p] != point_result[p + 1])
+            throw std::runtime_error("the point probably in the edge of grid");
+        if (point_result[0] == true) 
+          result.push_back(cell.index);
 
       }  // end loop cell
     }    // end loop points
+    return result;
   }
 
   /**
@@ -467,7 +490,7 @@ public:
    * 如果射线不相交，交点坐标为{-1.0e16, -1.0e16, -1.0e16}
    */
   void rayIntersectGrid(const double* points, const double* directions, int n,
-                        std::vector<int> ids,
+                        std::vector<int>& ids,
                         double* intersections_coordinates) {
     assert(points != NULL && directions != NULL &&
            intersections_coordinates != NULL);
@@ -510,7 +533,7 @@ public:
     }  // end loop ray
   }
 
-  void gridIntersectGrid(tbox::Pointer<hier::Patch<3>> src_patch, int number,
+  void gridIntersectGrid(tbox::Pointer<hier::Patch<3> > src_patch, int number,
                          std::vector<int> ids) {}
 
 private:
@@ -525,7 +548,7 @@ private:
 // 指向GridIntersect的实现
 //
 
-GridIntersect::GridIntersect(tbox::Pointer<hier::Patch<3>> dest_patch)
+GridIntersect::GridIntersect(tbox::Pointer<hier::Patch<3> > dest_patch)
     : impl_(new GridIntersectImpl(dest_patch)) {}
 
 GridIntersect::~GridIntersect() {}
@@ -536,14 +559,14 @@ std::vector<int> GridIntersect::pointInGrid(const double* points, int n) {
 
 void GridIntersect::rayIntersectGrid(const double* start_points,
                                      const double* direction, int n,
-                                     std::vector<int> ids,
+                                     std::vector<int>& ids,
                                      double* intersection_coordinates) {
   impl_->rayIntersectGrid(start_points, direction, n, ids,
                           intersection_coordinates);
 }
 
-void GridIntersect::gridIntersectGrid(tbox::Pointer<hier::Patch<3>> src_patch,
-                                      int number, std::vector<int> ids) {
+void GridIntersect::gridIntersectGrid(tbox::Pointer<hier::Patch<3> > src_patch,
+                                      int number, std::vector<int>& ids) {
   impl_->gridIntersectGrid(src_patch, number, ids);
 }
 #endif  // GRID_INTERSECT_CPP
