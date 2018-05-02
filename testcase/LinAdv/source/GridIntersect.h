@@ -29,11 +29,13 @@ public:
   ~GridIntersect();
 
   /**
-   * @brief 查询点是否在网格内，如果在输出所在网格单元编号
+   * @brief 判断点是否在网格中
    *
-   * @param points 将要查询的点集合
+   * @param points 输入点坐标
    * @param n 点的数量
-   * @return vector<int> 每个点所在的网格单元编号
+   * @return std::vector<int> 返回每个点所在网格单元，
+   *                          -1代表在网格外，
+   *                          >=0代表在网格中
    */
   std::vector<int> pointInGrid(const double* points, int n);
 
@@ -44,21 +46,24 @@ public:
    * @param direction 射线方向集合
    * @param n 射线的数量
    * @param ids 输出参数，交点所在网格单元编号
+   *        -1代表射线与网格外表面不相交，交点无意义
+   *        >=0代表射线与网格外表面相交，交点所在网格单元索引
    * @param intersection 输出参数，交点坐标
    */
   void rayIntersectGrid(const double* start_points, const double* direction,
                         int n, std::vector<int>& ids,
                         double* intersection_coordinates);
 
-  /**
-   * @brief 两个网格相交，输出相交网格单元个数以及单元在源网格片中的索引
-   *
-   * @param src_patch 源网格
-   * @param number 相交单元个数
-   * @param ids 源网格中相交网格单元索引
-   */
-  void gridIntersectGrid(tbox::Pointer<hier::Patch<3> > src_patch, int number,
-                         std::vector<int>& ids);
+  // /**
+  //  * @brief 两个网格相交，输出相交网格单元个数以及单元在源网格片中的索引
+  //  *
+  //  * @param src_patch 源网格
+  //  * @param number 相交单元个数
+  //  * @param ids 源网格中相交网格单元索引
+  //  */
+  // void gridIntersectGrid(tbox::Pointer<hier::Patch<3> > src_patch, int
+  // number,
+  //                        std::vector<int>& ids);
 
 private:
   boost::shared_ptr<GridIntersectImpl> impl_;

@@ -1,73 +1,28 @@
 /*
-  文件名:  $Id: mainpage.dox 772 2009-01-05 03:27:08Z liuqk $
+  文件名:  $Id: mainpage.dox 772 2018-05-02 13:27:08Z liuqk $
   软件包:  JAUMIN参考手册
   版权  :  2004-2010 北京应用物理与计算数学研究所
-  版本号:  $Revision: 772 $
-  修改  :  $Date: 2009-01-05 11:27:08 +0800 (一, 2009-01-05) $
-  描述  :  线性对流程序文档
+  版本号:  $Revision: 0 $
+  修改  :  $Date: 2018-05-02 13:27:08 +0800 (三, 2018-05-02) $
+  描述  :  基于线性对流程序的点网格定位程序
 */
 
 /*!
-  @mainpage  LinAdvection程序
+  @mainpage  PointInGridLinAdvExample
 
-  本程序应用JAUMIN框架，在非结构网格上, 采用显式迎风格式, 求解线性对流方程.
-
-  数学方案请参考: @ref package_examples_LinAdvection_math
+  本程序应用JAUMIN框架，采用LinAdv的三维输出，测试点在网格中定位模块是否正确.
 
   源代码请参考:
   - main.C                主程序
   - LinAdvLevelIntegrator 网格层积分算法类
   - LinAdv                网格片积分算法类
+  - GridIntersect         点/射线/网格与patch相交算法类
 
-  运行请参考: @ref package_examples_LinAdvection_readme .
+  运行请参考: @ref package_examples_PointInGridLinadvExample_readme .
 */
 
-
 /*!
- @page package_examples_LinAdvection_math 线性对流程序数学方案
-
-   线性对流方程: \n
-   @f$
-       \frac{\partial u(\vec{x},t)}{\partial t} 
-     + \nabla \cdot (\vec{a} \cdot u(\vec{x},t)) = 0, \quad \vec{x} \in \Omega 
-   @f$ \n
-   (其中, 对流速度 \f$ \vec{a}>=0 \f$, 为常量)
-
-   初始条件: \n
-   @f$
-       u(\vec{x},0) = u_0(\vec{x}), \quad \vec{x} \in \Omega
-   @f$
-
-   边界条件: \n
-   @f$
-       u(\vec{x},t) = u_{\Gamma}(t), \quad \vec{x} \in \Gamma_{\Omega}
-   @f$
-
-   离散格式: 时间离散采用显式格式, 空间离散采用一阶迎风格式.\n
-   以二维为例, 守恒量\f$ u_{i,j}^n \f$定义在单元中心, 
-   通量\f$ \vec{f}_{i-1/2,j}^n \f$定义在网格面心,
-   于是：\n
-   @f$ f_{i-1/2,j,0}^{n+1} = \Delta t \cdot a_0 \cdot u_{i-1,j}^n, @f$
-
-   @f$ f_{i,j-1/2,1}^{n+1} = \Delta t \cdot a_1 \cdot u_{i,j-1}^n, @f$
-
-   @f$ u_{i,j}^{n+1} = u_{i,j}^n + (f_{i-1/2,j,0}^{n+1} - f_{i+1/2,j,0}^{n+1})/\Delta x_0
-                                 + (f_{i,j-1/2,1}^{n+1} - f_{i,j+1/2,1}^{n+1})/\Delta x_1
-   @f$
-       
-   时间步长: 
-   @f$
-       \Delta t = c \cdot min(\Delta x_i/a_i), \quad 0<c<1
-   @f$
-
-   \n
-   注： 简单起见, 程序实际实现时, @f$ a_1 @f$ 和@f$ a_2 @f$(三维情形)总设为0, 
-        @f$ a_0 @f$则从输入文件中读入.
-*/
-
-
-/*!
- @page package_examples_LinAdvection_readme  LinAdvection程序README
+ @page package_examples_PointInGridLinadvExample_readme  PointInGridLinadvExample程序README
 
 \verbatim
 
@@ -75,26 +30,28 @@
 
       cd LinAdvection/build
 
-编译: 二维情况下，执行以下两条命令，创建可执行文件 main2d：
-      cmake -DCDIM=2 ../source
-      make
-      
-      三维情况下，执行以下两条命令，创建可执行文件 main3d：
+编译: 只支持三维，执行以下两条命令，创建可执行文件 main3d：
       cmake -DCDIM=3 ../source
       make
 
-运行: 串行运行：./main2d <input file>
-      并行运行： mpirun -np <nprocs> ./main2d <input file>
-
+运行: 串行运行：./main3d <input file>
       例如:
-      ./main2d ../input/linadv-2d.input
-      mpirun -np 2 ./main2d ../input/linadv-2d.input
+      ./main3d ../input/linadv-3d/linadv-3d.input
 
 2. 输入文件
 
    LinAdvection/input 目录下有如下输入文件:
-       linadv-2d.input （二维线性对流对流模型）.
        linadv-3d.input （三维线性对流对流模型）.
+
+3. 点网格测试说明
+    测试点与网格相交时，取三部分点来测试：
+        网格内部的点：将每个网格单元的cell_coordes，当作测试点
+        网格边界点：取x坐标最小的一个顶点作为测试点
+        网格外部点：取影像区网格单元的cell_coordes，作为测试点
+    输出：如果点在网格单元内，输出网格单元局部编号
+         如果点在网格单元棱上或者顶点上，提示一个错误
+         如果点在网格单元外部，返回-1
+   
 
 \endverbatim
 
