@@ -14,6 +14,9 @@
 #include <assert.h>
 #include <string>
 
+#include <iostream>
+using namespace std;
+
 /**
  * @brief 描述一个3维结点，里面包含patch内节点编号，节点坐标
  *
@@ -209,20 +212,21 @@ public:
    * @param point 输入点
    * @param vertex 输入多边形的顶点
    * @param n 多边形顶点的个数
-   * @return int >0 点在多边形内部
+   * @return int !=0 点在多边形内部
    *             =0 点在多边形外部
-   *             <0 算法错误情况
+   *
+   * @note vertex要保证最后一个V[n] = V[0]
    */
   int wnPnpoly(const double* point, const double* vertex, int n) {
     assert(point != NULL && vertex != NULL);
-    assert(n > 1);
+    assert(n > 2);
 
     int wn = 0;  //记录winding number 数量
 
     //遍历多边形的所有边
     for (int i = 0; i < n; i++) {  // vertex[i]和vertex[i+1]组成的边
-      double V[2] = {vertex[i * 2], vertex[i * 2 + 1]};
-      double V_next[2] = {vertex[(i + 1) * 2], vertex[(i + 1) * 2 + 1]};
+      const double V[2] = {vertex[i * 2], vertex[i * 2 + 1]};
+      const double V_next[2] = {vertex[(i + 1) * 2], vertex[(i + 1) * 2 + 1]};
       if (V[1] <= point[1]) {                //输入点在线段下顶点上方
         if (V_next[1] > point[1])            //一个向上的缠绕
           if (isLeft(V, V_next, point) > 0)  // p在边的左边
@@ -234,7 +238,6 @@ public:
             --wn;
       }
     }
-    assert(wn >= 0);
     return wn;
   }
 
@@ -291,9 +294,9 @@ public:
         intersection[0] = point[0] + direction[0] * t;
         intersection[1] = point[1] + direction[1] * t;
         intersection[2] = point[2] + direction[2] * t;
-        dist = t * sqrt(intersection[0] * intersection[0] +
-                        intersection[1] * intersection[1] +
-                        intersection[2] * intersection[2]);
+        dist =
+            t * sqrt(direction[0] * direction[0] + direction[1] * direction[1] +
+                     direction[2] * direction[2]);
       } else
         // t < 0，说明射线与平面的交点在射线的负方向，射线本上与平面无交点
         tag = -2;
@@ -377,21 +380,25 @@ public:
 
     if (tag == 0) {  //有交点
       //将交点与组成面的点降为2维
-      double new_points[(n + 1) * 3];
+      double new_points[(n + 2) *
+                        3];  //包含组成face的点以及一个face[n]=face[0]点以及交点
       for (int i = 0; i < n * 3; i++) new_points[i] = face[i];
-      new_points[n * 3] = intersection[0];
-      new_points[n * 3 + 1] = intersection[1];
-      new_points[n * 3 + 2] = intersection[2];
-      double result_points[(n + 1) * 2];
-      reduceDim(new_points, n + 1, result_points);
+      new_points[n * 3] = face[0];
+      new_points[n * 3 + 1] = face[1];
+      new_points[n * 3 + 2] = face[2];
+      new_points[(n + 1) * 3] = intersection[0];
+      new_points[(n + 1) * 3 + 1] = intersection[1];
+      new_points[(n + 1) * 3 + 2] = intersection[2];
+      double result_points[(n + 2) * 2];
+      reduceDim(new_points, n + 2, result_points);
 
       //判断交点是否在face构成的多边形中
-      double new_intersection[2] = {result_points[n * 2],
-                                    result_points[n * 2 + 1]};
-      if (wnPnpoly(new_intersection, result_points, n) > 0)
+      double new_intersection[2] = {result_points[(n + 1) * 2],
+                                    result_points[(n + 1) * 2 + 1]};
+      if (wnPnpoly(new_intersection, result_points, n + 1) != 0)
         return;
       else
-        tag == -3;
+        tag = -3;
     }
   }
 
@@ -497,6 +504,30 @@ public:
                         double* intersections_coordinates) {
     assert(points != NULL && directions != NULL &&
            intersections_coordinates != NULL);
+
+    //测试
+    cout << "射线：" << endl;
+    for (int i = 0; i < n; i++) {
+      cout << points[i * 3] << " " << points[i * 3 + 1] << " "
+           << points[i * 3 + 2] << " ";
+      cout << "," << directions[i * 3] << " " << directions[i * 3 + 1] << " "
+           << directions[i * 3 + 2] << endl;
+    }
+    cout << "外表面：";
+    for (std::map<int, int>::iterator iter = patch_outer_faces_.begin();
+         iter != patch_outer_faces_.end(); iter++) {
+      cout << iter->first << "；";
+      FaceDescriptor face = patch_faces_[iter->first];
+      std::vector<int> face_nodes = face.nodes;
+      double face_nodes_coord[face_nodes.size() * 3];
+      for (int i = 0; i < face_nodes.size(); i++) {
+        cout << patch_nodes_[face_nodes[i]].coord[0] << " ";
+        cout << patch_nodes_[face_nodes[i]].coord[1] << " ";
+        cout << patch_nodes_[face_nodes[i]].coord[2] << " ";
+      }
+      cout << endl;
+    }
+
     //遍历每一条射线
     for (int r = 0; r < n; r++) {
       const double point[3] = {points[r * 3], points[r * 3 + 1],

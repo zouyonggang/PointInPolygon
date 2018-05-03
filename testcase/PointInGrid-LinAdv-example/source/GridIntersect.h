@@ -54,17 +54,6 @@ public:
                         int n, std::vector<int>& ids,
                         double* intersection_coordinates);
 
-  // /**
-  //  * @brief 两个网格相交，输出相交网格单元个数以及单元在源网格片中的索引
-  //  *
-  //  * @param src_patch 源网格
-  //  * @param number 相交单元个数
-  //  * @param ids 源网格中相交网格单元索引
-  //  */
-  // void gridIntersectGrid(tbox::Pointer<hier::Patch<3> > src_patch, int
-  // number,
-  //                        std::vector<int>& ids);
-
 private:
   boost::shared_ptr<GridIntersectImpl> impl_;
 };

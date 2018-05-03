@@ -179,6 +179,9 @@ int main(int argc, char* argv[]) {
                      << endl;
           tbox::Pointer<hier::Patch<NDIM> > patch = patch_level->getPatch(p());
           cout << "patch index:" << patch->getIndex() << endl;
+
+          // if (patch->getIndex() != 7) continue;
+
           int cell_number =
               patch->getNumberOfEntities(hier::EntityUtilities::CELL, 0);
           cout << "Patch cell entity:" << cell_number << endl;
@@ -269,6 +272,31 @@ int main(int argc, char* argv[]) {
           // cout << endl << "boundary相交网格编号为:";
           // for (int i = 0; i < boundary_result.size(); i++)
           //   cout << boundary_result[i] << " ";
+
+          //进行射线与网格定位
+          //以影像区中心量坐标x轴方向减去100，作为射线起点，1，0，0作为方向
+          double direction[outside_points.size() * NDIM];
+          for (int i = 0; i < outside_points.size(); i++) {
+            direction[i * 3] = 0;
+            direction[i * 3 + 1] = 0;
+            direction[i * 3 + 2] = -1;
+            outside_point[i * 3] = outside_point[i * 3] + 2;
+            outside_point[i * 3 + 1] = outside_point[i * 3 + 1] + 1.5;
+            outside_point[i * 3 + 2] = outside_point[i * 3 + 2] + 0.5;
+          }
+          std::vector<int> ray_intersect_result;
+          double intersection_coordinates[outside_points.size() * 3];
+          intersect->rayIntersectGrid(
+              outside_point, direction, outside_points.size(),
+              ray_intersect_result, intersection_coordinates);
+          cout << endl << "ray intersect:" << endl;
+          for (int i = 0; i < outside_points.size(); i++) {
+            cout << ray_intersect_result[i] << ",";
+            cout << intersection_coordinates[i * 3] << " "
+                 << intersection_coordinates[i * 3 + 1] << " "
+                 << intersection_coordinates[i * 3 + 2];
+            cout << endl;
+          }
 
         }  // end patch
       }    // end level
